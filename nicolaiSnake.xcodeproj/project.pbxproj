@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		019E96CB284401150031537E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 019E96CA284401150031537E /* main.c */; };
+		019E96D32844311F0031537E /* libncurses.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 019E96D22844311E0031537E /* libncurses.tbd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,7 @@
 /* Begin PBXFileReference section */
 		019E96C7284401150031537E /* nicolaiSnake */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = nicolaiSnake; sourceTree = BUILT_PRODUCTS_DIR; };
 		019E96CA284401150031537E /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		019E96D22844311E0031537E /* libncurses.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libncurses.tbd; path = usr/lib/libncurses.tbd; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				019E96D32844311F0031537E /* libncurses.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +46,7 @@
 			children = (
 				019E96C9284401150031537E /* nicolaiSnake */,
 				019E96C8284401150031537E /* Products */,
+				019E96D12844311E0031537E /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -60,6 +64,14 @@
 				019E96CA284401150031537E /* main.c */,
 			);
 			path = nicolaiSnake;
+			sourceTree = "<group>";
+		};
+		019E96D12844311E0031537E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				019E96D22844311E0031537E /* libncurses.tbd */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
