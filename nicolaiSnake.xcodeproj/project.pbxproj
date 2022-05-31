@@ -27,6 +27,8 @@
 		019E96C7284401150031537E /* nicolaiSnake */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = nicolaiSnake; sourceTree = BUILT_PRODUCTS_DIR; };
 		019E96CA284401150031537E /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		019E96D22844311E0031537E /* libncurses.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libncurses.tbd; path = usr/lib/libncurses.tbd; sourceTree = SDKROOT; };
+		019E96D4284559840031537E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		019E96D528455A600031537E /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +46,8 @@
 		019E96BE284401150031537E = {
 			isa = PBXGroup;
 			children = (
+				019E96D528455A600031537E /* Makefile */,
+				019E96D4284559840031537E /* README.md */,
 				019E96C9284401150031537E /* nicolaiSnake */,
 				019E96C8284401150031537E /* Products */,
 				019E96D12844311E0031537E /* Frameworks */,
