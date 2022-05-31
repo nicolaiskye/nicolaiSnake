@@ -48,6 +48,8 @@ int main() {
     raw(); /* line buffering disabled */
     noecho(); /* disable echoing of char type by user */
     getmaxyx(stdscr, context.window_height, context.window_width);
+    context.game_area_height = context.window_height;
+    context.game_area_width = context.window_width;
     
     // Game area is just the window area for now.
     // Will update later when I add an info panel.
