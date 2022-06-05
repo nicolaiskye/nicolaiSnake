@@ -6,6 +6,7 @@
 //
 
 #include <ncurses.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define TIMEOUT 300
@@ -15,12 +16,12 @@ typedef struct GameContext {
     int window_width;
     int game_area_height;
     int game_area_width;
-} gameContext;
+} gameContext_t;
 
 typedef struct Position {
     int x;
     int y;
-} position;
+} position_t;
 
 typedef enum Direction {
     Up,
@@ -28,21 +29,32 @@ typedef enum Direction {
     Left,
     Right,
     None,
-} direction;
+} direction_t;
 
 struct SnakePiece {
-    position pos;
+    position_t position;
     struct SnakePiece *next_piece;
 };
 
-void drawBorder(gameContext *context);
-void drawPlayer(void);
+typedef struct Player {
+    char graphic;
+    direction_t direction;
+    struct SnakePiece *snakeHead;
+} player_t;
+
+void drawBorder(gameContext_t *context);
+void drawPlayer(struct SnakePiece *piece);
+
+void addNewPiece(player_t *player);
+
+int lengthOfTail(struct SnakePiece *piece);
+struct SnakePiece* getTail(struct SnakePiece *piece);
 
 int main() {
     
     int ch;
     struct GameContext context;
-    direction dir;
+//    direction_t playerDirection;
     
     initscr(); /* start curses mode */
     raw(); /* line buffering disabled */
@@ -67,75 +79,92 @@ int main() {
     // Timeout acts as timer to run the games FPS
     timeout(TIMEOUT);
     
-    // Player starting position and direction
-    const char player_snake_head = '#';
-    position player_pos;
-    position next_block;
-    player_pos.x = (int)game_area_width/2;
-    player_pos.y = (int)game_area_height/2;
-    char player_input;
-    dir = None; // Player starts standing still
+    // Player graphic, starting position, and direction
+    player_t player;
+    player.graphic = '#';
+    player.snakeHead = (struct SnakePiece*) malloc(sizeof(struct SnakePiece));
+    player.snakeHead->position.x = (int)game_area_width/2;
+    player.snakeHead->position.y = (int)game_area_height/2;
+    player.snakeHead->next_piece = NULL;
+    player.direction = None; // Player starts standing still
+    
+    char playerInput;
     
     // Create the 'quit' message and determine its placement on screen
-    const char* quitmsg = "Press 'q' to quit.";
-    const int quitmsg_halfpoint = (int)strlen(quitmsg)/2;
-    const int window_halfpoint = (int)context.game_area_width/2;
-    const int quitmsg_x_pos = window_halfpoint-quitmsg_halfpoint;
+    const char *quitMessage = "Press 'q' to quit.";
+    const int quitMessageHalfpoint = (int)strlen(quitMessage)/2;
+    const int windowHalfpoint = (int)context.game_area_width/2;
+    const int quitMessage_x_position = windowHalfpoint-quitMessageHalfpoint;
+    
+    bool playerAteFood = true;
     
     // Game loop
     while(true) {
         clear();
-        mvprintw(2, quitmsg_x_pos, quitmsg);
-                
+        mvprintw(2, quitMessage_x_position, quitMessage);
+        
         // Move the player head in the desired direction
-        switch(dir) {
+        switch(player.direction) {
+            // TODO: Add checks if next block causes death
             case Up:
-                player_pos.y -= 1;
+                if (playerAteFood) {
+                    addNewPiece(&player);
+                }
+                player.snakeHead->position.y -= 1;
                 break;
             case Down:
-                player_pos.y += 1;
+                if (playerAteFood) {
+                    addNewPiece(&player);
+                }
+                player.snakeHead->position.y += 1;
                 break;
             case Left:
-                player_pos.x -= 1;
+                if (playerAteFood) {
+                    addNewPiece(&player);
+                }
+                player.snakeHead->position.x -= 1;
                 break;
             case Right:
-                player_pos.x += 1;
+                if (playerAteFood) {
+                    addNewPiece(&player);
+                }
+                player.snakeHead->position.x += 1;
                 break;
             case None: // Do nothing
                 break;
         }
-        
-        // Wrap player if past game bounds
-        if (player_pos.x <= 0)
-            player_pos.x = game_area_width-2;
-        if (player_pos.x >= game_area_width-1)
-            player_pos.x = 1;
-        
-        if (player_pos.y <= 0)
-            player_pos.y = game_area_height-2;
-        if (player_pos.y >= game_area_height-1)
-            player_pos.y = 1;
+
+        // Warp player if past game bounds
+        if (player.snakeHead->position.x <= 0)
+            player.snakeHead->position.x = game_area_width-2;
+        if (player.snakeHead->position.x >= game_area_width-1)
+            player.snakeHead->position.x = 1;
+
+        if (player.snakeHead->position.y <= 0)
+            player.snakeHead->position.y = game_area_height-2;
+        if (player.snakeHead->position.y >= game_area_height-1)
+            player.snakeHead->position.y = 1;
         
         attron(A_BOLD);
-        mvaddch(player_pos.y, player_pos.x, player_snake_head);
+        drawPlayer(player.snakeHead);
         attroff(A_BOLD);
 
-    
         drawBorder(&context);
         refresh();
         
-        player_input = getch();
-        if (player_input == 'w')
-            dir = Up;
-        if (player_input == 'a')
-            dir = Left;
-        if (player_input == 's')
-            dir = Down;
-        if (player_input == 'd')
-            dir = Right;
+        // Get player input for next frame
+        playerInput = getch();
+        if (playerInput == 'w')
+            player.direction = Up;
+        if (playerInput == 'a')
+            player.direction = Left;
+        if (playerInput == 's')
+            player.direction = Down;
+        if (playerInput == 'd')
+            player.direction = Right;
         
         // Quit the game
-        if (player_input == 'q')
+        if (playerInput == 'q')
             break;
     }
     
@@ -143,13 +172,7 @@ int main() {
     return 0;
 }
 
-void drawBorder(gameContext *context) {
-    
-    // DEBUG
-    mvprintw(2, 2, "ga height: %d", context->game_area_height);
-    mvprintw(4, 2, "ga width: %d", context->game_area_width);
-    // END DEBUG
-    
+void drawBorder(gameContext_t *context) {
     for (int wrow = 0; wrow < context->game_area_height; ++wrow) {
         for (int wcol = 0; wcol < context->game_area_width; ++wcol) {
             // Left and right sides of border
@@ -163,6 +186,38 @@ void drawBorder(gameContext *context) {
     }
 }
 
-void drawPlayer(void) {
+struct SnakePiece* getTail(struct SnakePiece *piece) {
+    if (piece->next_piece == NULL) {
+        return piece;
+    } else {
+        return getTail(piece->next_piece);
+    }
+}
+
+void addNewPiece(player_t *player) {
+    struct SnakePiece *newPiece = (struct SnakePiece*) malloc(sizeof(struct SnakePiece));
+    newPiece->position.x = player->snakeHead->position.x;
+    newPiece->position.y = player->snakeHead->position.y;
+    newPiece->next_piece = player->snakeHead->next_piece;
+    // Add new piece to end of tail
+    player->snakeHead->next_piece = newPiece;
+}
+
+int lengthOfTail(struct SnakePiece *piece) {
+    if (piece->next_piece == NULL) {
+        return 1;
+    } else {
+        return lengthOfTail(piece->next_piece) + 1;
+    }
+}
+
+void drawPlayer(struct SnakePiece *piece) {
+    mvaddch(piece->position.y, piece->position.x, '#');
+    if (piece->next_piece != NULL) {
+        drawPlayer(piece->next_piece);
+    }
+}
+
+void movePlayer(player_t *player, position_t position) {
     
 }
