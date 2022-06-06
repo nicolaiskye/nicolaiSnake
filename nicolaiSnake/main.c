@@ -6,24 +6,25 @@
 //
 
 #include <ncurses.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define TIMEOUT 300
 
-typedef struct GameContext {
+typedef struct {
     int window_height;
     int window_width;
     int game_area_height;
     int game_area_width;
 } gameContext_t;
 
-typedef struct Position {
+typedef struct {
     int x;
     int y;
 } position_t;
 
-typedef enum Direction {
+typedef enum {
     Up,
     Down,
     Left,
@@ -36,7 +37,7 @@ struct SnakePiece {
     struct SnakePiece *next_piece;
 };
 
-typedef struct Player {
+typedef struct {
     char graphic;
     direction_t direction;
     struct SnakePiece *snakeHead;
@@ -46,15 +47,19 @@ void drawBorder(gameContext_t *context);
 void drawPlayer(struct SnakePiece *piece);
 
 void addNewPiece(player_t *player);
+void movePiece(struct SnakePiece *piece, position_t position);
+void movePlayer(player_t *player, position_t position);
+position_t getNextPosition(position_t *currentPosition, position_t difference);
+bool playerWillCollideWithSelf(player_t *player, position_t nextPosition);
 
 int lengthOfTail(struct SnakePiece *piece);
 struct SnakePiece* getTail(struct SnakePiece *piece);
 
+
 int main() {
     
     int ch;
-    struct GameContext context;
-//    direction_t playerDirection;
+    gameContext_t context;
     
     initscr(); /* start curses mode */
     raw(); /* line buffering disabled */
@@ -96,39 +101,94 @@ int main() {
     const int windowHalfpoint = (int)context.game_area_width/2;
     const int quitMessage_x_position = windowHalfpoint-quitMessageHalfpoint;
     
-    bool playerAteFood = true;
+    int sizeToFive = 0; // debug only
+    bool playerAteFood = true; // debug only
+    position_t nextPosition;
     
     // Game loop
     while(true) {
         clear();
         mvprintw(2, quitMessage_x_position, quitMessage);
         
+        
+        if (sizeToFive >= 10) { playerAteFood = false; } // debug only
+        
         // Move the player head in the desired direction
         switch(player.direction) {
             // TODO: Add checks if next block causes death
             case Up:
+                nextPosition.x = 0;
+                nextPosition.y = -1;
+                nextPosition = getNextPosition(&player.snakeHead->position, nextPosition);
+                
+                // check if nextPosition = death
+                if (playerWillCollideWithSelf(&player, nextPosition)) {
+                    mvprintw(10, quitMessage_x_position, "GAME OVER");
+                    timeout(99999);
+                    getch();
+                }
+                
+                // check if nextPosition = food
                 if (playerAteFood) {
+                    sizeToFive += 1; // debug only
                     addNewPiece(&player);
                 }
-                player.snakeHead->position.y -= 1;
+                
+                movePlayer(&player, nextPosition);
                 break;
             case Down:
+                nextPosition.x = 0;
+                nextPosition.y = 1;
+                nextPosition = getNextPosition(&player.snakeHead->position, nextPosition);
+                
+                // check if nextPosition = death
+                if (playerWillCollideWithSelf(&player, nextPosition)) {
+                    break;
+                }
+                
+                // check if nextPosition = food
                 if (playerAteFood) {
+                    sizeToFive += 1; // debug only
                     addNewPiece(&player);
                 }
-                player.snakeHead->position.y += 1;
+                
+                movePlayer(&player, nextPosition);
                 break;
             case Left:
+                nextPosition.x = -1;
+                nextPosition.y = 0;
+                nextPosition = getNextPosition(&player.snakeHead->position, nextPosition);
+                
+                // check if nextPosition = death
+                if (playerWillCollideWithSelf(&player, nextPosition)) {
+                    break;
+                }
+                
+                // check if nextPosition = food
                 if (playerAteFood) {
+                    sizeToFive += 1; // debug only
                     addNewPiece(&player);
                 }
-                player.snakeHead->position.x -= 1;
+                
+                movePlayer(&player, nextPosition);
                 break;
             case Right:
+                nextPosition.x = 1;
+                nextPosition.y = 0;
+                nextPosition = getNextPosition(&player.snakeHead->position, nextPosition);
+                
+                // check if nextPosition = death
+                if (playerWillCollideWithSelf(&player, nextPosition)) {
+                    break;
+                }
+                
+                // check if nextPosition = food
                 if (playerAteFood) {
+                    sizeToFive += 1; // debug only
                     addNewPiece(&player);
                 }
-                player.snakeHead->position.x += 1;
+                
+                movePlayer(&player, nextPosition);
                 break;
             case None: // Do nothing
                 break;
@@ -167,6 +227,10 @@ int main() {
         if (playerInput == 'q')
             break;
     }
+    
+    
+    mvprintw(2, quitMessage_x_position, quitMessage);
+    // TODO: Clean up memory before exit
     
     endwin(); /* end curses session */
     return 0;
@@ -219,5 +283,41 @@ void drawPlayer(struct SnakePiece *piece) {
 }
 
 void movePlayer(player_t *player, position_t position) {
+//    position_t nextPosition;
+//    position_t nextPosition = player->snakeHead->position.x += position.x;
+//    position_t nextPosition = player->snakeHead->position.y += position.y;
+    movePiece(player->snakeHead, position);
+}
+
+void movePiece(struct SnakePiece *piece, position_t position) {
+    if (piece->next_piece != NULL) {
+        movePiece(piece->next_piece, piece->position);
+    }
+    piece->position = position;
+}
+
+position_t getNextPosition(position_t *currentPosition, position_t difference) {
+    position_t position;
+    position.x = currentPosition->x += difference.x;
+    position.y = currentPosition->y += difference.y;
+    return position;
+}
+
+bool playerWillCollideWithSelf(player_t *player, position_t nextPosition) {
+    char spot = (char) ((A_CHARTEXT) & mvinch(nextPosition.y, nextPosition.x));
     
+    fprintf(stderr, "playerWillCollideWithSelf: spot: %c", spot);
+    fprintf(stderr, "playerWillCollideWithSelf: player->graphic: %c", player->graphic);
+    
+    if (spot == player->graphic) {
+        fprintf(stderr, "Collision with graphic detected... checking if == tail vector");
+        position_t *tailPosition = &getTail(player->snakeHead)->position;
+        if (tailPosition->x == nextPosition.x
+            && tailPosition->y == nextPosition.y) {
+            fprintf(stderr, "Yes, was tail vector. Ignoring...");
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
